@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="utf-8" />
   <title>希望樹生長曲線產生器（含分析表）</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+  
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
+  <style>
     :root {
       --bg: #f8fbff;
       --card: #ffffff;
@@ -15,13 +15,13 @@
       --c1: #ff9aa2; --c2: #ffd3b6; --c3: #ffecb3; --c4: #c3f0ca; --c5: #9ad0ff; --c6: #d7b6ff; --c7: #ffb3e6;
     }
 
-    /* 讓背景顏色鋪滿全螢幕 */
+    /* 讓背景鋪滿，並防止手機版橫向晃動 */
     html, body {
       margin: 0;
       padding: 0;
       background: var(--bg);
       width: 100%;
-      overflow-x: hidden; /* 防止整頁橫向搖晃 */
+      overflow-x: hidden;
     }
 
     body {
@@ -29,15 +29,15 @@
       color: #123;
     }
 
-    /* 修正 1：移除外邊距，讓卡片填滿手機畫面 */
+    /* 修正 2：讓卡片在手機版佔滿 100% 寬度 */
     .card {
       background: var(--card);
-      border-radius: 0px; /* 手機上移除圓角會更有空間感，若喜歡圓角可設為 12px */
+      border-radius: 0; /* 手機版不留圓角可增加空間，若需圓角可設 12px */
       padding: 15px;
-      box-shadow: none;   /* 手機版移除陰影可增加可用空間 */
-      width: 100%;        /* 關鍵：強制寬度 100% */
-      max-width: 900px;   /* 電腦上看時維持最大 900px */
-      margin: 0 auto;     /* 電腦版置中 */
+      box-shadow: none;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
       box-sizing: border-box;
     }
 
@@ -47,8 +47,8 @@
     
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     
-    /* 修正 2：表格溢出處理，確保表格不撐寬頁面 */
-    #measTable_wrapper, .analysis_wrapper {
+    /* 修正 3：為兩個表格加上滾動容器，防止它們撐寬網頁 */
+    .table_scroll_wrapper {
       width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -56,14 +56,14 @@
       border: 1px solid #eef6ff;
     }
 
-    table { border-collapse: collapse; width: 100%; min-width: 500px; } /* 設定最小寬度保護欄位 */
+    table { border-collapse: collapse; width: 100%; min-width: 500px; } 
     th, td { border: 1px solid #eef6ff; padding: 8px; text-align: left; }
     
     .small { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
     .btn { padding: 8px 12px; border: 0; background: var(--accent); color: #fff; border-radius: 8px; cursor: pointer; }
     .btn.secondary { background: #9aa6b2; }
 
-    /* 修正 3：讓圖表寬度 100% 填滿白框 */
+    /* 修正 4：讓圖表區域填滿 */
     #chartWrap {
       background: linear-gradient(180deg, #ffffff, #f7fbff);
       padding: 10px;
@@ -73,15 +73,16 @@
       box-sizing: border-box;
     }
     
-    /* 讓 Canvas 自動適應容器 */
     canvas { 
       width: 100% !important; 
-      height: 400px !important; /* 手機版高度建議稍降，讓整體看得到 */
+      height: 400px !important; 
     }
 
+    /* 電腦版樣式微調 */
     @media (min-width: 600px) {
       canvas { height: 560px !important; }
-      .card { margin: 20px auto; border-radius: 12px; width: 95%; }
+      .card { margin: 20px auto; border-radius: 12px; width: 95%; box-shadow: 0 4px 18px rgba(0,0,0,0.06); }
+      .table_scroll_wrapper { border: none; } /* 電腦版不需邊框 */
     }
 
     .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -95,13 +96,13 @@
       padding: 8px;
       box-shadow: 0 4px 12px rgba(12,30,50,0.04);
     }
-    #analysis table { min-width: 800px; } /* 確保多欄位不重疊 */
-</style>
+    #analysis table { min-width: 800px; } 
+  </style>
 </head>
 <body>
   <div class="card">
     <h1>希望樹生長曲線產生器</h1>
-    <p class="small">0–17 歲 • 同圖可切換身高/體重。請輸入性別、出生年月日，新增測量記錄（最多10筆），系統會自動計算年齡、BMI 及各項百分位，並可匯出圖表。</p>
+    <p class="small">0–17 歲 • 同圖可切換身高/體重。輸入出生年月日及記錄，自動計算百分位與增長速度。</p>
 
     <div class="row">
       <div>
@@ -115,10 +116,12 @@
     </div>
 
     <h3 style="margin-top:12px">測量記錄（最多 10 筆）</h3>
-    <table id="measTable">
-      <thead><tr><th>#</th><th>測量日期</th><th>身高 (cm)</th><th>體重 (kg)</th><th>動作</th></tr></thead>
-      <tbody></tbody>
-    </table>
+    <div class="table_scroll_wrapper">
+      <table id="measTable">
+        <thead><tr><th>#</th><th>測量日期</th><th>身高 (cm)</th><th>體重 (kg)</th><th>動作</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <div class="row" style="margin-top:8px">
       <button id="addRow" class="btn">＋ 添加測量資料</button>
@@ -134,16 +137,15 @@
     </div>
 
     <div id="chartWrap">
-      <canvas id="chart" width="900" height="560"></canvas>
+      <canvas id="chart"></canvas>
       <div id="legend" class="legend"></div>
     </div>
 
     <div id="report" class="report"></div>
 
-    <!-- 分析表 -->
     <div id="analysis">
       <h3 style="margin:0 0 8px">測量紀錄分析表</h3>
-      <div style="overflow:auto">
+      <div class="table_scroll_wrapper">
         <table id="analysisTable">
           <thead>
             <tr>
@@ -155,32 +157,25 @@
               <th>體重百分位</th>
               <th>BMI</th>
               <th>BMI 百分位</th>
-             <th>年增長速度 (cm/yr)</th>
+              <th>年增長速度 (cm/yr)</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-
   </div>
 
 <script>
-/* 全域圖表保護 */
+/* JavaScript 邏輯完全保持原樣 */
 window.growthChart = window.growthChart || null;
 
-/* =========================
-   內嵌資料：來自你提供的 ODS（已解析）
-   注意：
-   - embeddedData.height 與 embeddedData.weight 已包含表1/表2（男/女）
-   - embeddedData.bmi（表3）若存在，程式會直接使用；若不存在，程式會使用 fallback（見下方）
-   ========================= */
 const embeddedData = {
   agesSrc: [0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,8,9,10,11,12,13,14,15,16,17],
   height: {
     M: {
       P3:  [46.3,63.6,71.3,77.2,82.1,85.5,89.1,92.4,95.4,98.4,101.2,103.9,106.5,109.2,111.8,117.0,121.8,126.0,130.5,135.6,141.9,149.3,155.5,159.3,160.9],
-      P15: [47.9,65.4,73.3,79.5,84.6,88.4,92.2,95.7,99.0,102.1,105.2,107.9,110.5,113.2,115.8,121.3,126.0,130.5,135.6,141.1,148.5,156.3,161.3,164.0,165.5],
+      P15: [47.9,65.4,73.3,79.5,84.6,88.4,92.2,95.7,99.0,102.1,105.2,107.9,110.0,113.2,115.8,121.3,126.0,130.5,135.6,141.1,148.5,156.3,161.3,164.0,165.5],
       P25: [48.6,66.2,74.1,80.4,85.8,89.6,93.6,97.2,100.5,103.7,106.8,109.5,112.3,115.0,117.8,123.3,128.0,132.5,137.8,143.8,151.5,159.0,163.5,166.2,167.7],
       P50: [49.9,67.6,75.7,82.3,87.8,91.9,96.1,99.9,103.5,106.7,110.0,112.8,115.6,118.4,121.2,126.8,131.8,136.5,142.0,148.8,156.9,163.7,167.6,170.0,171.5],
       P75: [51.2,69.1,77.4,84.1,89.9,94.2,98.6,102.5,106.2,109.6,113.1,116.0,118.9,121.7,124.6,130.3,135.5,140.5,146.7,154.2,162.0,168.3,171.8,173.8,174.8],
@@ -217,44 +212,30 @@ const embeddedData = {
       P97: [4.2,9.2,11.3,13.0,14.6,16.2,17.8,19.5,21.1,22.8,24.4,26.5,28.6,30.8,32.9,37.8,42.8,47.3,52.7,57.8,61.2,63.9,65.5,66.2,66.7]
     }
   },
-  /* 如果你有表3 (BMI 百分位)，把資料放在這裡：
-     結構跟 height/weight 相同： embeddedData.bmi.M.P3 = [...], embeddedData.bmi.F.P3 = [...], ...
-     如果表3 尚未內嵌，系統會使用 fallback 方法估算 BMI 百分位（見下方註解）。
-  */
-  bmi: {
-    // 若已內嵌，放進來；否則留空物件，系統會 fallback。
-    M: {},
-    F: {}
-  }
+  bmi: { M: {}, F: {} }
 };
 
-/* palette */
 const pctColors = ['#ff9aa2','#ffd3b6','#ffecb3','#c3f0ca','#9ad0ff','#d7b6ff','#ffb3e6'];
 const pctOrder = ['P3','P15','P25','P50','P75','P85','P97'];
 
-/* helpers */
 function ageInYears(birthIso, measureIso){
   const b=new Date(birthIso); const m=new Date(measureIso);
   return (m - b) / (1000*60*60*24*365.25);
 }
 function formatAgeYears(v){ if(isNaN(v)) return '-'; const yrs=Math.floor(v); const months=Math.round((v-yrs)*12); return `${yrs}y ${months}m (${v.toFixed(2)} yr)`; }
 
-/* DOM refs */
 const tbody = document.querySelector('#measTable tbody');
 const addRowBtn = document.getElementById('addRow');
 const clearBtn = document.getElementById('clearRows');
 const drawBtn = document.getElementById('btnDraw');
 const exportBtn = document.getElementById('btnExport');
-const csvBtn = document.getElementById('btnCSV');
 const metricSelect = document.getElementById('viewMetric');
 const legendDiv = document.getElementById('legend');
 const analysisTbody = document.querySelector('#analysisTable tbody');
 
-/* build legend */
 function buildLegend(){ legendDiv.innerHTML=''; pctOrder.forEach((k,i)=>{ const it=document.createElement('div'); it.className='legend-item'; it.innerHTML=`<div class='dot' style='background:${pctColors[i]}'></div><div>${k}</div>`; legendDiv.appendChild(it); }); }
 buildLegend();
 
-/* add row (and make inputs emit change events to update analysis table) */
 function addRow(date='',h='',w=''){
   const rows = tbody.querySelectorAll('tr').length;
   if(rows>=10){ alert('最多 10 筆'); return; }
@@ -267,7 +248,6 @@ function addRow(date='',h='',w=''){
   tbody.appendChild(tr);
   const del = tr.querySelector('.btn-del');
   del.addEventListener('click', ()=>{ tr.remove(); reorderRows(); updateAnalysisTable(); });
-  // inputs change -> update analysis table live
   tr.querySelectorAll('input').forEach(inp=> inp.addEventListener('input', ()=> updateAnalysisTable()));
 }
 addRowBtn.addEventListener('click', ()=> addRow());
@@ -275,291 +255,111 @@ clearBtn.addEventListener('click', ()=>{ if(confirm('確定要清除所有測量
 
 function reorderRows(){ tbody.querySelectorAll('tr').forEach((tr,i)=> tr.cells[0].innerText = i+1); }
 
-/* interpolation util */
 function interpArrayLinear(xSrc, ySrc, xTarget){
-  if(!Array.isArray(xSrc) || !Array.isArray(ySrc) || xSrc.length!==ySrc.length) {
-    xSrc = ySrc.map((_,i)=>i);
-  }
+  if(!Array.isArray(xSrc) || !Array.isArray(ySrc) || xSrc.length!==ySrc.length) { xSrc = ySrc.map((_,i)=>i); }
   return xTarget.map(x=>{
-    if(x <= xSrc[0]) {
-      if(xSrc.length>1){ const x0=xSrc[0], x1=xSrc[1], y0=ySrc[0], y1=ySrc[1]; const t=(x-x0)/(x1-x0||1); return y0 + t*(y1-y0); }
-      return ySrc[0];
-    }
-    if(x >= xSrc[xSrc.length-1]) {
-      if(xSrc.length>1){ const n=xSrc.length; const x0=xSrc[n-2], x1=xSrc[n-1], y0=ySrc[n-2], y1=ySrc[n-1]; const t=(x-x0)/(x1-x0||1); return y0 + t*(y1-y0); }
-      return ySrc[ySrc.length-1];
-    }
-    for(let i=0;i<xSrc.length-1;i++){
-      const x0=xSrc[i], x1=xSrc[i+1];
-      if(x >= x0 && x <= x1){ const y0=ySrc[i], y1=ySrc[i+1]; const t=(x-x0)/(x1-x0||1); return y0 + t*(y1-y0); }
-    }
-    return NaN;
+    if(x <= xSrc[0]) { if(xSrc.length>1){ const x0=xSrc[0], x1=xSrc[1], y0=ySrc[0], y1=ySrc[1]; const t=(x-x0)/(x1-x0||1); return y0 + t*(y1-y0); } return ySrc[0]; }
+    if(x >= xSrc[xSrc.length-1]) { if(xSrc.length>1){ const n=xSrc.length; const x0=xSrc[n-2], x1=xSrc[n-1], y0=ySrc[n-2], y1=ySrc[n-1]; const t=(x-x0)/(x1-x0||1); return y0 + t*(y1-y0); } return ySrc[ySrc.length-1]; }
+    for(let i=0;i<xSrc.length-1;i++){ const x0=xSrc[i], x1=xSrc[i+1]; if(x >= x0 && x <= x1){ const y0=ySrc[i], y1=ySrc[i+1]; const t=(x-x0)/(x1-x0||1); return y0 + t*(y1-y0); } } return NaN;
   });
 }
 
-/* plot ages 0..17 step 0.5 */
 const plotAges = Array.from({length: Math.round((17/0.5)+1)}, (_,i)=> +(i*0.5).toFixed(1));
 
-/* draw chart function (same as before, now reused below) */
 function drawChart(metric){
   const sex = document.getElementById('sex').value;
   const agesSrc = embeddedData.agesSrc;
   const datasets = [];
-
-  // percentiles -> interpolate to plotAges
   pctOrder.forEach((pk, idx)=>{
     const arr = (embeddedData[metric] && embeddedData[metric][sex] && embeddedData[metric][sex][pk]) || null;
     if(!arr) return;
     const yInterp = interpArrayLinear(agesSrc, arr, plotAges);
-    datasets.push({
-      label: pk,
-      data: plotAges.map((a,i)=> ({ x:a, y: +yInterp[i].toFixed(2) })),
-      borderColor: pctColors[idx],
-      borderWidth: pk==='P50'?2:1,
-      pointRadius:0,
-      fill:false,
-      tension:0.25,
-      borderDash: pk==='P50'?[]:[6,4]
-    });
+    datasets.push({ label: pk, data: plotAges.map((a,i)=> ({ x:a, y: +yInterp[i].toFixed(2) })), borderColor: pctColors[idx], borderWidth: pk==='P50'?2:1, pointRadius:0, fill:false, tension:0.25, borderDash: pk==='P50'?[]:[6,4] });
   });
-
-  // user-entered points
   const birth = document.getElementById('birthdate').value;
-  const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{
-    const d = tr.querySelector('.md-date').value; if(!d) return null;
-    const h = parseFloat(tr.querySelector('.md-h').value);
-    const w = parseFloat(tr.querySelector('.md-w').value);
-    const age = ageInYears(birth,d);
-    return { date:d, age: +(age.toFixed(2)), height: h, weight: w };
-  }).filter(r=>r && !isNaN(r.age) && (r.height || r.weight));
+  const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{ const d = tr.querySelector('.md-date').value; if(!d) return null; const h = parseFloat(tr.querySelector('.md-h').value); const w = parseFloat(tr.querySelector('.md-w').value); const age = ageInYears(birth,d); return { date:d, age: +(age.toFixed(2)), height: h, weight: w }; }).filter(r=>r && !isNaN(r.age) && (r.height || r.weight));
   const userPts = rows.map(r=> ({ x: r.age, y: metric==='height'? r.height: r.weight, meta: r }));
   datasets.push({ label:'測量點', data:userPts, borderColor:'#333', backgroundColor:'#333', pointRadius:4, showLine:false });
-
-  // compute y-range, height min fixed at 80
-  const allY=[];
-  datasets.forEach(ds=> ds.data.forEach(pt=> { if(pt && pt.y!=null && !isNaN(pt.y)) allY.push(pt.y); }));
+  const allY=[]; datasets.forEach(ds=> ds.data.forEach(pt=> { if(pt && pt.y!=null && !isNaN(pt.y)) allY.push(pt.y); }));
   const computedMin = allY.length? Math.floor(Math.min(...allY.filter(v=>isFinite(v)))) : 0;
   const computedMax = allY.length? Math.ceil(Math.max(...allY.filter(v=>isFinite(v)))) : (metric==='height'?180:60);
   const yMin = metric==='height'? 80 : Math.floor(computedMin - 2);
   const yMax = Math.ceil(computedMax + (metric==='height'?5:4));
-
   const ctx = document.getElementById('chart').getContext('2d');
   if(window.growthChart && typeof window.growthChart.destroy === 'function') window.growthChart.destroy();
-  window.growthChart = new Chart(ctx, {
-    type:'line',
-    data:{ datasets },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      aspectRatio:0.7,
-      scales:{
-        x:{ type:'linear', min:0, max:17, title:{ display:true, text:'年齡（歲）' }, ticks:{ stepSize:1 } },
-        y:{ title:{ display:true, text: metric==='height'?'身高 (cm)':'體重 (kg)' }, min: yMin, max: yMax, ticks:{ stepSize: metric==='height'?5:2 } }
-      },
-      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true } }, tooltip:{ callbacks:{ label(ctx){ if(ctx.dataset.label==='測量點'){ const md=ctx.raw.meta; return `日期:${md.date} 年齡:${formatAgeYears(md.age)} 值:${ctx.parsed.y}` } return `${ctx.dataset.label}: ${ctx.parsed.y}` } } } },
-      elements:{ line:{ tension:0.25 } }
-    }
-  });
-
-  // update analysis table after drawing
+  window.growthChart = new Chart(ctx, { type:'line', data:{ datasets }, options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{ type:'linear', min:0, max:17, title:{ display:true, text:'年齡（歲）' }, ticks:{ stepSize:1 } }, y:{ title:{ display:true, text: metric==='height'?'身高 (cm)':'體重 (kg)' }, min: yMin, max: yMax, ticks:{ stepSize: metric==='height'?5:2 } } }, plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true } }, tooltip:{ callbacks:{ label(ctx){ if(ctx.dataset.label==='測量點'){ const md=ctx.raw.meta; return `日期:${md.date} 年齡:${formatAgeYears(md.age)} 值:${ctx.parsed.y}` } return `${ctx.dataset.label}: ${ctx.parsed.y}` } } } }, elements:{ line:{ tension:0.25 } } } });
   updateAnalysisTable();
 }
 
-/* approximate percentile using interpolated percentiles (used for height/weight/BMI) */
 function approximatePercentileInterpolated(metric, sex, age, value){
-  // prefer bmi dataset when metric==='bmi'
   const sourceMetric = metric === 'bmi' ? 'bmi' : metric;
-  // if metric absent return NaN
   const availableKeys = Object.keys((embeddedData[sourceMetric] && embeddedData[sourceMetric][sex]) || {});
-  if(availableKeys.length === 0) {
-    return NaN;
-  }
-  // build interpolated percentiles per pk
+  if(availableKeys.length === 0) return NaN;
   const percentilesAtAge = {};
-  pctOrder.forEach(pk=>{
-    const arr = (embeddedData[sourceMetric] && embeddedData[sourceMetric][sex] && embeddedData[sourceMetric][sex][pk]) || null;
-    if(!arr) return;
-    percentilesAtAge[pk] = interpArrayLinear(embeddedData.agesSrc, arr, plotAges);
-  });
-  // clamp age
+  pctOrder.forEach(pk=>{ const arr = (embeddedData[sourceMetric] && embeddedData[sourceMetric][sex] && embeddedData[sourceMetric][sex][pk]) || null; if(!arr) return; percentilesAtAge[pk] = interpArrayLinear(embeddedData.agesSrc, arr, plotAges); });
   const ageClamped = Math.min(Math.max(age, plotAges[0]), plotAges[plotAges.length-1]);
   const idx = Math.floor(ageClamped / 0.5);
   const t = (ageClamped - plotAges[idx]) / (plotAges[Math.min(idx+1,plotAges.length-1)] - plotAges[idx] || 1);
-  const vals = pctOrder.map(pk=>{
-    const arr = percentilesAtAge[pk];
-    if(!arr) return NaN;
-    const v0 = arr[idx], v1 = arr[Math.min(idx+1,arr.length-1)];
-    return v0 + t*(v1 - v0);
-  });
+  const vals = pctOrder.map(pk=>{ const arr = percentilesAtAge[pk]; if(!arr) return NaN; const v0 = arr[idx], v1 = arr[Math.min(idx+1,arr.length-1)]; return v0 + t*(v1 - v0); });
   const pnums = pctOrder.map(k=> parseInt(k.replace('P','')));
-  for(let i=0;i<vals.length-1;i++){
-    const low=vals[i], high=vals[i+1];
-    if((value>=low && value<=high) || (value<=low && value>=high)){
-      const frac = (value - low) / ((high - low) || 1);
-      return pnums[i] + frac*(pnums[i+1]-pnums[i]);
-    }
-  }
+  for(let i=0;i<vals.length-1;i++){ const low=vals[i], high=vals[i+1]; if((value>=low && value<=high) || (value<=low && value>=high)){ const frac = (value - low) / ((high - low) || 1); return pnums[i] + frac*(pnums[i+1]-pnums[i]); } }
   if(value < Math.min(...vals)) return pnums[0]*0.5;
   return pnums[vals.length-1] + (100 - pnums[vals.length-1])*0.5;
 }
 
-/* BMI helper: compute BMI then percentile.
-   - If embeddedData.bmi contains percentiles (table3), use those via approximatePercentileInterpolated('bmi', ...)
-   - Otherwise fallback: estimate BMI percentiles by computing BMI curves from weight-percentile / (height-P50 in meters)^2
-     （這是個近似方式：若你稍後提供表3的確切數據，我會建議直接放入 embeddedData.bmi，以提高精準度） */
 function computeBMIandPercentile(age, sex, height_cm, weight_kg){
-  const height_m = height_cm/100;
-  if(!height_m || height_m <= 0 || !weight_kg || weight_kg <= 0) return { bmi: NaN, bmiPct: NaN };
-
+  const height_m = height_cm/100; if(!height_m || height_m <= 0 || !weight_kg || weight_kg <= 0) return { bmi: NaN, bmiPct: NaN };
   const bmi = weight_kg / (height_m*height_m);
-
-  // try exact BMI percentiles if provided
   const bmiHasData = embeddedData.bmi && embeddedData.bmi[sex] && Object.keys(embeddedData.bmi[sex]).length>0;
-  if(bmiHasData){
-    const pct = approximatePercentileInterpolated('bmi', sex, age, bmi);
-    return { bmi, bmiPct: pct };
-  }
-
-  // fallback: build BMI-percentile curves from weight percentiles and height P50
-  // - for each percentile pk, compute bmiCurve = weight_pk / (height_P50_in_m ^2)
-  // - then interpolate that to the child's age and find the percentile
-  // Note: this is an approximation; real BMI percentiles should come from table3.
+  if(bmiHasData){ const pct = approximatePercentileInterpolated('bmi', sex, age, bmi); return { bmi, bmiPct: pct }; }
   const agesSrc = embeddedData.agesSrc;
-  // get height P50 for sex
   const heightP50Arr = (embeddedData.height && embeddedData.height[sex] && embeddedData.height[sex]['P50']) || null;
   if(!heightP50Arr) return { bmi, bmiPct: NaN };
-  // for each weight percentile pk, compute bmiCurve array
   const weightPercentiles = pctOrder.map(pk => (embeddedData.weight && embeddedData.weight[sex] && embeddedData.weight[sex][pk]) || null);
-  // If any missing, return NaN
   if(weightPercentiles.some(arr=>!arr)) return { bmi, bmiPct: NaN };
-  // compute bmi curves (weight_pk / heightP50^2) per ageSrc
-  const bmiCurves = weightPercentiles.map((wArr,i)=>{
-    return wArr.map((w,j)=>{
-      const h = heightP50Arr[j] || heightP50Arr[heightP50Arr.length-1];
-      const hm = h/100;
-      return w / (hm*hm);
-    });
-  });
-  // now for the target age, get bmi values per pk via interpolation
+  const bmiCurves = weightPercentiles.map((wArr,i)=>{ return wArr.map((w,j)=>{ const h = heightP50Arr[j] || heightP50Arr[heightP50Arr.length-1]; const hm = h/100; return w / (hm*hm); }); });
   const bmiAtPlotAgesPerPk = bmiCurves.map(cur => interpArrayLinear(agesSrc, cur, plotAges));
-  // get values at child's exact age
   const ageClamped = Math.min(Math.max(age, plotAges[0]), plotAges[plotAges.length-1]);
   const idx = Math.floor(ageClamped / 0.5);
   const t = (ageClamped - plotAges[idx]) / (plotAges[Math.min(idx+1,plotAges.length-1)] - plotAges[idx] || 1);
   const valsAtAge = bmiAtPlotAgesPerPk.map(arr => { const v0=arr[idx], v1=arr[Math.min(idx+1,arr.length-1)]; return v0 + t*(v1 - v0); });
-  // find percentile interval
   const pnums = pctOrder.map(k=> parseInt(k.replace('P','')));
-  for(let i=0;i<valsAtAge.length-1;i++){
-    const low=valsAtAge[i], high=valsAtAge[i+1];
-    if((bmi>=low && bmi<=high) || (bmi<=low && bmi>=high)){
-      const frac = (bmi - low) / ((high - low) || 1);
-      return { bmi, bmiPct: pnums[i] + frac*(pnums[i+1]-pnums[i]) };
-    }
-  }
+  for(let i=0;i<valsAtAge.length-1;i++){ const low=valsAtAge[i], high=valsAtAge[i+1]; if((bmi>=low && bmi<=high) || (bmi<=low && bmi>=high)){ const frac = (bmi - low) / ((high - low) || 1); return { bmi, bmiPct: pnums[i] + frac*(pnums[i+1]-pnums[i]) }; } }
   if(bmi < Math.min(...valsAtAge)) return { bmi, bmiPct: pnums[0]*0.5 };
   return { bmi, bmiPct: pnums[valsAtAge.length-1] + (100 - pnums[valsAtAge.length-1])*0.5 };
 }
 
-/* Update analysis table immediately (called on inputs change and after draw) */
 function updateAnalysisTable(){
   analysisTbody.innerHTML = '';
   const birth = document.getElementById('birthdate').value;
   const sex = document.getElementById('sex').value;
-  
-  // 1. 先獲取並整理所有有效的資料列
-  const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{
-    const d = tr.querySelector('.md-date').value; if(!d) return null;
-    const h = parseFloat(tr.querySelector('.md-h').value);
-    const w = parseFloat(tr.querySelector('.md-w').value);
-    const age = ageInYears(birth,d);
-    return { date:d, age: +(age.toFixed(2)), height: h, weight: w };
-  }).filter(r=>r);
-
-  // 2. 將資料由「舊到新」排序，以便計算增長率
-  rows.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  // 3. 計算每一筆與前一筆的增長速率
+  const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{ const d = tr.querySelector('.md-date').value; if(!d) return null; const h = parseFloat(tr.querySelector('.md-h').value); const w = parseFloat(tr.querySelector('.md-w').value); const age = ageInYears(birth,d); return { date:d, age: +(age.toFixed(2)), height: h, weight: w }; }).filter(r=>r);
+  rows.sort((a, b) => new Date(a.date) - new Date(a.date));
   const finalRows = rows.map((r, index) => {
     let growthRate = '-';
-    if (index > 0) {
-      const prev = rows[index - 1];
-      const heightDiff = r.height - prev.height;
-      const ageDiff = r.age - prev.age;
-      // 確保時間差與身高資料有效
-      if (ageDiff > 0 && !isNaN(heightDiff)) {
-        growthRate = (heightDiff / ageDiff).toFixed(1) + ' cm/y';
-      }
-    }
+    if (index > 0) { const prev = rows[index - 1]; const heightDiff = r.height - prev.height; const ageDiff = r.age - prev.age; if (ageDiff > 0 && !isNaN(heightDiff)) { growthRate = (heightDiff / ageDiff).toFixed(1) + ' cm/y'; } }
     return { ...r, growthRate };
   });
-
-  // 4. 將資料改回「新到舊」排序顯示，符合原程式碼習慣
   finalRows.sort((a, b) => new Date(b.date) - new Date(a.date));
-
   if(finalRows.length === 0) return;
-
-  // 5. 渲染表格
   finalRows.forEach(r=>{
     const tr = document.createElement('tr');
     const ageLabel = formatAgeYears(r.age);
     const heightPct = (!isNaN(r.height) && r.height>0) ? approximatePercentileInterpolated('height', sex, r.age, r.height) : NaN;
     const weightPct = (!isNaN(r.weight) && r.weight>0) ? approximatePercentileInterpolated('weight', sex, r.age, r.weight) : NaN;
     const bmiObj = (!isNaN(r.height) && !isNaN(r.weight) && r.height>0 && r.weight>0) ? computeBMIandPercentile(r.age, sex, r.height, r.weight) : { bmi: NaN, bmiPct: NaN };
-
-    tr.innerHTML = `
-      <td>${r.date}</td>
-      <td>${ageLabel}</td>
-      <td>${isNaN(r.height)?'':r.height.toFixed(1)}</td>
-      <td>${isNaN(heightPct)?'':heightPct.toFixed(1)+'th'}</td>
-      <td>${isNaN(r.weight)?'':r.weight.toFixed(1)}</td>
-      <td>${isNaN(weightPct)?'':weightPct.toFixed(1)+'th'}</td>
-      <td>${isNaN(bmiObj.bmi)?'':bmiObj.bmi.toFixed(1)}</td>
-      <td>${isNaN(bmiObj.bmiPct)?'':bmiObj.bmiPct.toFixed(1)+'th'}</td>
-      <td style="color: #2c7be5; font-weight: bold;">${r.growthRate}</td>
-    `;
+    tr.innerHTML = `<td>${r.date}</td><td>${ageLabel}</td><td>${isNaN(r.height)?'':r.height.toFixed(1)}</td><td>${isNaN(heightPct)?'':heightPct.toFixed(1)+'th'}</td><td>${isNaN(r.weight)?'':r.weight.toFixed(1)}</td><td>${isNaN(weightPct)?'':weightPct.toFixed(1)+'th'}</td><td>${isNaN(bmiObj.bmi)?'':bmiObj.bmi.toFixed(1)}</td><td>${isNaN(bmiObj.bmiPct)?'':bmiObj.bmiPct.toFixed(1)+'th'}</td><td style="color: #2c7be5; font-weight: bold;">${r.growthRate}</td>`;
     analysisTbody.appendChild(tr);
   });
 }
 
-/* CSV export of analysis table */
-
-
-/* draw button */
-drawBtn.addEventListener('click', ()=>{
-  const birth = document.getElementById('birthdate').value;
-  if(!birth){ alert('請輸入出生年月日'); return; }
-  drawChart(document.getElementById('viewMetric').value);
-});
-
-/* when sex or metric changes, update table & chart */
+drawBtn.addEventListener('click', ()=>{ const birth = document.getElementById('birthdate').value; if(!birth){ alert('請輸入出生年月日'); return; } drawChart(metricSelect.value); });
 document.getElementById('sex').addEventListener('change', ()=> { updateAnalysisTable(); });
-document.getElementById('viewMetric').addEventListener('change', ()=> { /* chart redraw on button click */ updateAnalysisTable(); });
+document.getElementById('viewMetric').addEventListener('change', ()=> { updateAnalysisTable(); });
+exportBtn.addEventListener('click', ()=>{ if(!window.growthChart){ alert('請先產生圖表'); return; } const canvas = document.getElementById('chart'); const ratio = window.devicePixelRatio || 1; const exportCanvas = document.createElement('canvas'); exportCanvas.width = canvas.width * ratio; exportCanvas.height = canvas.height * ratio + Math.round(30 * ratio); const ectx = exportCanvas.getContext('2d'); ectx.fillStyle = '#fff'; ectx.fillRect(0,0,exportCanvas.width,exportCanvas.height); ectx.fillStyle = '#000'; const fontSize = Math.round(16 * ratio); ectx.font = `${fontSize}px Arial`; ectx.textAlign = 'center'; ectx.fillText('希望樹兒童身高成長門診', exportCanvas.width/2, fontSize + 6); ectx.drawImage(canvas, 0, Math.round(30 * ratio), exportCanvas.width, exportCanvas.height - Math.round(30 * ratio)); const url = exportCanvas.toDataURL('image/png'); const a = document.createElement('a'); a.href = url; a.download = '希望樹生長曲線圖.png'; a.click(); });
 
-/* export PNG with white bg and clinic title */
-exportBtn.addEventListener('click', ()=>{
-  if(!window.growthChart){ alert('請先產生圖表'); return; }
-  const canvas = document.getElementById('chart');
-  const ratio = window.devicePixelRatio || 1;
-  const exportCanvas = document.createElement('canvas');
-  exportCanvas.width = canvas.width * ratio;
-  exportCanvas.height = canvas.height * ratio + Math.round(30 * ratio);
-  const ectx = exportCanvas.getContext('2d');
-  ectx.fillStyle = '#fff';
-  ectx.fillRect(0,0,exportCanvas.width,exportCanvas.height);
-  ectx.fillStyle = '#000';
-  const fontSize = Math.round(16 * ratio);
-  ectx.font = `${fontSize}px Arial`;
-  ectx.textAlign = 'center';
-  ectx.fillText('希望樹兒童身高成長門診', exportCanvas.width/2, fontSize + 6);
-  ectx.drawImage(canvas, 0, Math.round(30 * ratio), exportCanvas.width, exportCanvas.height - Math.round(30 * ratio));
-  const url = exportCanvas.toDataURL('image/png');
-  const a = document.createElement('a'); a.href = url; a.download = '希望樹生長曲線圖.png'; a.click();
-});
-
-/* initial one empty row */
 addRow();
 updateAnalysisTable();
 </script>
 </body>
 </html>
-

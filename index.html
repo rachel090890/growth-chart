@@ -92,6 +92,7 @@
               <th>體重百分位</th>
               <th>BMI</th>
               <th>BMI 百分位</th>
+             <th>年增長速度 (cm/yr)</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -401,7 +402,8 @@ function updateAnalysisTable(){
   analysisTbody.innerHTML = '';
   const birth = document.getElementById('birthdate').value;
   const sex = document.getElementById('sex').value;
-  const metric = document.getElementById('viewMetric').value;
+  
+  // 1. 先獲取並整理所有有效的資料列
   const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{
     const d = tr.querySelector('.md-date').value; if(!d) return null;
     const h = parseFloat(tr.querySelector('.md-h').value);
@@ -409,15 +411,36 @@ function updateAnalysisTable(){
     const age = ageInYears(birth,d);
     return { date:d, age: +(age.toFixed(2)), height: h, weight: w };
   }).filter(r=>r);
-  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
-  if(rows.length===0) return;
-  rows.forEach(r=>{
+
+  // 2. 將資料由「舊到新」排序，以便計算增長率
+  rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // 3. 計算每一筆與前一筆的增長速率
+  const finalRows = rows.map((r, index) => {
+    let growthRate = '-';
+    if (index > 0) {
+      const prev = rows[index - 1];
+      const heightDiff = r.height - prev.height;
+      const ageDiff = r.age - prev.age;
+      // 確保時間差與身高資料有效
+      if (ageDiff > 0 && !isNaN(heightDiff)) {
+        growthRate = (heightDiff / ageDiff).toFixed(1) + ' cm/y';
+      }
+    }
+    return { ...r, growthRate };
+  });
+
+  // 4. 將資料改回「新到舊」排序顯示，符合原程式碼習慣
+  finalRows.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  if(finalRows.length === 0) return;
+
+  // 5. 渲染表格
+  finalRows.forEach(r=>{
     const tr = document.createElement('tr');
     const ageLabel = formatAgeYears(r.age);
-    // compute percentiles for height & weight
     const heightPct = (!isNaN(r.height) && r.height>0) ? approximatePercentileInterpolated('height', sex, r.age, r.height) : NaN;
     const weightPct = (!isNaN(r.weight) && r.weight>0) ? approximatePercentileInterpolated('weight', sex, r.age, r.weight) : NaN;
-    // compute BMI & BMI percentile (uses bmi table if present, otherwise fallback)
     const bmiObj = (!isNaN(r.height) && !isNaN(r.weight) && r.height>0 && r.weight>0) ? computeBMIandPercentile(r.age, sex, r.height, r.weight) : { bmi: NaN, bmiPct: NaN };
 
     tr.innerHTML = `
@@ -429,6 +452,7 @@ function updateAnalysisTable(){
       <td>${isNaN(weightPct)?'':weightPct.toFixed(1)+'th'}</td>
       <td>${isNaN(bmiObj.bmi)?'':bmiObj.bmi.toFixed(1)}</td>
       <td>${isNaN(bmiObj.bmiPct)?'':bmiObj.bmiPct.toFixed(1)+'th'}</td>
+      <td style="color: #2c7be5; font-weight: bold;">${r.growthRate}</td>
     `;
     analysisTbody.appendChild(tr);
   });

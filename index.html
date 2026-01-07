@@ -6,7 +6,7 @@
   <title>希望樹生長曲線產生器（含分析表）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
- <style>
+<style>
     :root {
       --bg: #f8fbff;
       --card: #ffffff;
@@ -15,78 +15,87 @@
       --c1: #ff9aa2; --c2: #ffd3b6; --c3: #ffecb3; --c4: #c3f0ca; --c5: #9ad0ff; --c6: #d7b6ff; --c7: #ffb3e6;
     }
 
+    /* 讓背景顏色鋪滿全螢幕 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      width: 100%;
+      overflow-x: hidden; /* 防止整頁橫向搖晃 */
+    }
+
     body {
       font-family: Arial, Helvetica, sans-serif;
-      margin: 18px;
-      background: var(--bg);
       color: #123;
     }
 
-    /* 卡片容器：電腦版置中且最大 900px，手機版寬度自動縮放 */
+    /* 修正 1：移除外邊距，讓卡片填滿手機畫面 */
     .card {
       background: var(--card);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 4px 18px rgba(12,30,50,0.06);
-      max-width: 900px; /* 限制電腦版最大寬度 */
-      margin: 18px auto; /* 置中 */
-      width: 95%;      /* 手機版佔滿 95% 寬度 */
-      box-sizing: border-box; /* 確保 padding 不會撐破容器 */
+      border-radius: 0px; /* 手機上移除圓角會更有空間感，若喜歡圓角可設為 12px */
+      padding: 15px;
+      box-shadow: none;   /* 手機版移除陰影可增加可用空間 */
+      width: 100%;        /* 關鍵：強制寬度 100% */
+      max-width: 900px;   /* 電腦上看時維持最大 900px */
+      margin: 0 auto;     /* 電腦版置中 */
+      box-sizing: border-box;
     }
 
     h1 { font-size: 20px; margin: 0 0 8px; }
     label { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }
     input, select, button { padding: 8px 10px; font-size: 14px; border-radius: 8px; border: 1px solid #e6eef9; }
     
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    
+    /* 修正 2：表格溢出處理，確保表格不撐寬頁面 */
+    #measTable_wrapper, .analysis_wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 8px;
+      border: 1px solid #eef6ff;
+    }
 
-    /* 通用表格設定 */
-    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    table { border-collapse: collapse; width: 100%; min-width: 500px; } /* 設定最小寬度保護欄位 */
     th, td { border: 1px solid #eef6ff; padding: 8px; text-align: left; }
     
     .small { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
     .btn { padding: 8px 12px; border: 0; background: var(--accent); color: #fff; border-radius: 8px; cursor: pointer; }
     .btn.secondary { background: #9aa6b2; }
 
-    /* 圖表區塊 */
+    /* 修正 3：讓圖表寬度 100% 填滿白框 */
     #chartWrap {
       background: linear-gradient(180deg, #ffffff, #f7fbff);
-      padding: 12px;
+      padding: 10px;
       border-radius: 10px;
       margin-top: 12px;
+      width: 100%;
       box-sizing: border-box;
     }
-    canvas { width: 100% !important; height: 560px !important; }
+    
+    /* 讓 Canvas 自動適應容器 */
+    canvas { 
+      width: 100% !important; 
+      height: 400px !important; /* 手機版高度建議稍降，讓整體看得到 */
+    }
+
+    @media (min-width: 600px) {
+      canvas { height: 560px !important; }
+      .card { margin: 20px auto; border-radius: 12px; width: 95%; }
+    }
 
     .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .legend-item { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
     .dot { width: 14px; height: 14px; border-radius: 4px; }
-    .report { margin-top: 12px; font-size: 14px; }
-
-    /* 分析表容器：關鍵在於 overflow-x 讓表格在手機上可左右滑動 */
+    
     #analysis {
       margin-top: 12px;
       border-radius: 10px;
       background: #fff;
       padding: 8px;
       box-shadow: 0 4px 12px rgba(12,30,50,0.04);
-      overflow-x: auto; /* 手機不跑版的關鍵：橫向捲軸 */
     }
-
-    #analysis table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 700px; /* 確保表格欄位不會被擠壓得太難看 */
-    }
-
-    #analysis th, #analysis td {
-      border: 1px solid #eef6ff;
-      padding: 8px;
-      font-size: 13px;
-    }
-
-    #analysis .smallcol { font-size: 12px; color: var(--muted); }
+    #analysis table { min-width: 800px; } /* 確保多欄位不重疊 */
 </style>
 </head>
 <body>
@@ -553,3 +562,4 @@ updateAnalysisTable();
 </script>
 </body>
 </html>
+

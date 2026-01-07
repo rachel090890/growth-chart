@@ -1,39 +1,93 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="utf-8" />
   <title>希望樹生長曲線產生器（含分析表）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root{
-      --bg:#f8fbff; --card:#ffffff; --accent:#3fb0ff; --muted:#6b6f76;
-      --c1:#ff9aa2; --c2:#ffd3b6; --c3:#ffecb3; --c4:#c3f0ca; --c5:#9ad0ff; --c6:#d7b6ff; --c7:#ffb3e6;
+ <style>
+    :root {
+      --bg: #f8fbff;
+      --card: #ffffff;
+      --accent: #3fb0ff;
+      --muted: #6b6f76;
+      --c1: #ff9aa2; --c2: #ffd3b6; --c3: #ffecb3; --c4: #c3f0ca; --c5: #9ad0ff; --c6: #d7b6ff; --c7: #ffb3e6;
     }
-    body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:var(--bg);color:#123}
-    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 4px 18px rgba(12,30,50,0.06)}
-    h1{font-size:20px;margin:0 0 8px}
-    label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
-    input,select,button{padding:8px 10px;font-size:14px;border-radius:8px;border:1px solid #e6eef9}
-    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    table{border-collapse:collapse;width:100%;margin-top:8px}
-    th,td{border:1px solid #eef6ff;padding:8px;text-align:left}
-    .small{font-size:13px;color:var(--muted);margin-bottom:8px}
-    .btn{padding:8px 12px;border:0;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer}
-    .btn.secondary{background:#9aa6b2}
-    #chartWrap{background:linear-gradient(180deg,#ffffff, #f7fbff);padding:12px;border-radius:10px;margin-top:12px}
-    canvas{width:100% !important;height:560px !important}
-    .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-    .legend-item{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#ffffff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.03)}
-    .dot{width:14px;height:14px;border-radius:4px}
-    .report{margin-top:12px;font-size:14px}
-    /* 分析表樣式 */
-    #analysis{margin-top:12px;border-radius:10px;background:#fff;padding:8px;box-shadow:0 4px 12px rgba(12,30,50,0.04)}
-    #analysis table{width:100%;border-collapse:collapse}
-    #analysis th, #analysis td{border:1px solid #eef6ff;padding:8px;font-size:13px}
-    #analysis .smallcol{font-size:12px;color:var(--muted)}
-  </style>
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 18px;
+      background: var(--bg);
+      color: #123;
+    }
+
+    /* 卡片容器：電腦版置中且最大 900px，手機版寬度自動縮放 */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 18px rgba(12,30,50,0.06);
+      max-width: 900px; /* 限制電腦版最大寬度 */
+      margin: 18px auto; /* 置中 */
+      width: 95%;      /* 手機版佔滿 95% 寬度 */
+      box-sizing: border-box; /* 確保 padding 不會撐破容器 */
+    }
+
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    label { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }
+    input, select, button { padding: 8px 10px; font-size: 14px; border-radius: 8px; border: 1px solid #e6eef9; }
+    
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+    /* 通用表格設定 */
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #eef6ff; padding: 8px; text-align: left; }
+    
+    .small { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .btn { padding: 8px 12px; border: 0; background: var(--accent); color: #fff; border-radius: 8px; cursor: pointer; }
+    .btn.secondary { background: #9aa6b2; }
+
+    /* 圖表區塊 */
+    #chartWrap {
+      background: linear-gradient(180deg, #ffffff, #f7fbff);
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+      box-sizing: border-box;
+    }
+    canvas { width: 100% !important; height: 560px !important; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+    .dot { width: 14px; height: 14px; border-radius: 4px; }
+    .report { margin-top: 12px; font-size: 14px; }
+
+    /* 分析表容器：關鍵在於 overflow-x 讓表格在手機上可左右滑動 */
+    #analysis {
+      margin-top: 12px;
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      box-shadow: 0 4px 12px rgba(12,30,50,0.04);
+      overflow-x: auto; /* 手機不跑版的關鍵：橫向捲軸 */
+    }
+
+    #analysis table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px; /* 確保表格欄位不會被擠壓得太難看 */
+    }
+
+    #analysis th, #analysis td {
+      border: 1px solid #eef6ff;
+      padding: 8px;
+      font-size: 13px;
+    }
+
+    #analysis .smallcol { font-size: 12px; color: var(--muted); }
+</style>
 </head>
 <body>
   <div class="card">

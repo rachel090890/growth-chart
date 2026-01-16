@@ -3,16 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <title>希望樹生長曲線產生器（含分析表）</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=1024" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root{
       --bg:#f8fbff; --card:#ffffff; --accent:#3fb0ff; --muted:#6b6f76;
       --c1:#ff9aa2; --c2:#ffd3b6; --c3:#ffecb3; --c4:#c3f0ca; --c5:#9ad0ff; --c6:#d7b6ff; --c7:#ffb3e6;
     }
-    body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:var(--bg);color:#123}
-    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 4px 18px rgba(12,30,50,0.06)}
-    h1{font-size:20px;margin:0 0 8px}
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      margin:18px;
+      background:var(--bg);
+      color:#123;
+      min-width: 1024px; /* 確保手機橫向滑動時背景完整 */
+    }
+    .card{
+      background:var(--card);
+      border-radius:12px;
+      padding:24px; /* 稍微增加間距讓電腦感更強 */
+      box-shadow:0 4px 18px rgba(12,30,50,0.06);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    /* ... 其餘 CSS 與 JS 保持不變 ... */    h1{font-size:20px;margin:0 0 8px}
     label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
     input,select,button{padding:8px 10px;font-size:14px;border-radius:8px;border:1px solid #e6eef9}
     .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}

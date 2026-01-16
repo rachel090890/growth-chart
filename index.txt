@@ -10,14 +10,7 @@
       --bg:#f8fbff; --card:#ffffff; --accent:#3fb0ff; --muted:#6b6f76;
       --c1:#ff9aa2; --c2:#ffd3b6; --c3:#ffecb3; --c4:#c3f0ca; --c5:#9ad0ff; --c6:#d7b6ff; --c7:#ffb3e6;
     }
-    /* 修改這裡：讓 body 不要限制在 100vw，允許被內容撐開 */
-    body{
-      font-family:Arial,Helvetica,sans-serif;
-      margin:18px;
-      background:var(--bg);
-      color:#123;
-      min-width: 950px; /* 強制網頁最小寬度，防止手機限縮 */
-    }
+    body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:var(--bg);color:#123}
     .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 4px 18px rgba(12,30,50,0.06)}
     h1{font-size:20px;margin:0 0 8px}
     label{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
@@ -29,50 +22,16 @@
     .small{font-size:13px;color:var(--muted);margin-bottom:8px}
     .btn{padding:8px 12px;border:0;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer}
     .btn.secondary{background:#9aa6b2}
-
-    /* 修改圖表容器：固定寬度 */
-    #chartWrap{
-      background:linear-gradient(180deg,#ffffff, #f7fbff);
-      padding:12px;
-      border-radius:10px;
-      margin-top:12px;
-      width: 920px; 
-    }
-    /* 強制 Canvas 寬度 */
-    canvas{
-      width: 900px !important; 
-      height: 560px !important;
-    }
-
+    #chartWrap{background:linear-gradient(180deg,#ffffff, #f7fbff);padding:12px;border-radius:10px;margin-top:12px}
+    canvas{width:100% !important;height:560px !important}
     .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
     .legend-item{display:flex;align-items:center;gap:6px;padding:4px 8px;background:#ffffff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.03)}
     .dot{width:14px;height:14px;border-radius:4px}
     .report{margin-top:12px;font-size:14px}
-
-    /* 修改分析表樣式：固定寬度避免擠壓 */
-    #analysis{
-      margin-top:12px;
-      border-radius:10px;
-      background:#fff;
-      padding:8px;
-      box-shadow:0 4px 12px rgba(12,30,50,0.04);
-      width: 920px;
-    }
-    #analysis table{
-      width: 900px;
-      border-collapse:collapse;
-      table-layout: fixed; /* 固定佈局 */
-    }
-    #analysis th, #analysis td{
-      border:1px solid #eef6ff;
-      padding:8px;
-      font-size:13px;
-      word-break: break-all; /* 避免文字過長撐破 */
-    }
-    /* 指定最後一欄生長進度的寬度，確保文字放得下 */
-    #analysis th:last-child, #analysis td:last-child {
-      width: 180px;
-    }
+    /* 分析表樣式 */
+    #analysis{margin-top:12px;border-radius:10px;background:#fff;padding:8px;box-shadow:0 4px 12px rgba(12,30,50,0.04)}
+    #analysis table{width:100%;border-collapse:collapse}
+    #analysis th, #analysis td{border:1px solid #eef6ff;padding:8px;font-size:13px}
     #analysis .smallcol{font-size:12px;color:var(--muted)}
   </style>
 </head>
@@ -121,7 +80,7 @@
     <!-- 分析表 -->
     <div id="analysis">
       <h3 style="margin:0 0 8px">測量紀錄分析表</h3>
-      <div>
+      <div style="overflow:auto">
         <table id="analysisTable">
           <thead>
             <tr>
@@ -327,8 +286,8 @@ function drawChart(metric){
     type:'line',
     data:{ datasets },
     options:{
-      responsive:false,
-      maintainAspectRatio:true,
+      responsive:true,
+      maintainAspectRatio:false,
       aspectRatio:0.7,
       scales:{
         x:{ type:'linear', min:0, max:17, title:{ display:true, text:'年齡（歲）' }, ticks:{ stepSize:1 } },
